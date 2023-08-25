@@ -7,36 +7,41 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
-import pl.gr.veterinaryapp.model.dto.UserDto;
+import pl.gr.veterinaryapp.mapper.VetAppUserMapper;
+import pl.gr.veterinaryapp.model.dto.VetAppUserRequestDto;
+import pl.gr.veterinaryapp.model.dto.VetAppUserResponseDto;
 import pl.gr.veterinaryapp.model.entity.Role;
 import pl.gr.veterinaryapp.model.entity.VetAppUser;
-import pl.gr.veterinaryapp.repository.UserRepository;
-import pl.gr.veterinaryapp.service.UserService;
+import pl.gr.veterinaryapp.repository.VetAppUserRepository;
+import pl.gr.veterinaryapp.service.VetAppUserService;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class VetAppUserServiceImpl implements VetAppUserService {
 
-    private final UserRepository userRepository;
+    private final VetAppUserRepository vetAppUserRepository;
     private final PasswordEncoder encoder;
 
+    private final VetAppUserMapper mapper;
+
     @Override
-    public List<VetAppUser> getAllUsers() {
-        return userRepository.findAll();
+    public List<VetAppUserResponseDto> getAllUsers() {
+        return mapper.mapAsList(vetAppUserRepository.findAll());
     }
 
     @Override
-    public VetAppUser getUser(long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
+    public VetAppUserResponseDto getUser(long id) {
+        return vetAppUserRepository.findById(id).stream()
+                .map(mapper::mapToDto)
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
     }
 
     @Override
     @Transactional
-    public VetAppUser createUser(UserDto user) {
-        userRepository.findByUsername(user.getUsername())
+    public VetAppUserResponseDto createUser(VetAppUserRequestDto user) {
+        vetAppUserRepository.findByUsername(user.getUsername())
                 .ifPresent(u -> {
                     throw new IncorrectDataException("Username exists.");
                 });
@@ -44,14 +49,14 @@ public class UserServiceImpl implements UserService {
         newVetAppUser.setUsername(user.getUsername());
         newVetAppUser.setPassword(encoder.encode(user.getPassword()));
         newVetAppUser.setRole(new Role(user.getRole()));
-        return userRepository.save(newVetAppUser);
+        return mapper.mapToDto(vetAppUserRepository.save(newVetAppUser));
     }
 
     @Override
     @Transactional
     public void deleteUser(long id) {
-        var user = userRepository.findById(id)
+        var user = vetAppUserRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("Wrong id."));
-        userRepository.delete(user);
+        vetAppUserRepository.delete(user);
     }
 }

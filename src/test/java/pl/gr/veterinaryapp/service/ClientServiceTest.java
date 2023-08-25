@@ -9,9 +9,10 @@ import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
 import pl.gr.veterinaryapp.mapper.ClientMapper;
 import pl.gr.veterinaryapp.model.dto.ClientRequestDto;
+import pl.gr.veterinaryapp.model.dto.ClientResponseDto;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.repository.ClientRepository;
-import pl.gr.veterinaryapp.repository.UserRepository;
+import pl.gr.veterinaryapp.repository.VetAppUserRepository;
 import pl.gr.veterinaryapp.service.impl.ClientServiceImpl;
 
 import java.util.ArrayList;
@@ -38,24 +39,27 @@ class ClientServiceTest {
     @Mock
     private ClientMapper mapper;
     @Mock
-    private UserRepository userRepository;
+    private VetAppUserRepository vetAppUserRepository;
     @InjectMocks
     private ClientServiceImpl clientService;
 
     @Test
     void getClientById_WithCorrectId_Returned() {
         Client client = new Client();
+        ClientResponseDto clientResponseDto = new ClientResponseDto();
 
         when(clientRepository.findById(anyLong())).thenReturn(Optional.of(client));
+        when(mapper.mapToDto(eq(client))).thenReturn(clientResponseDto);
 
         var result = clientService.getClientById(CLIENT_ID);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(client);
+                .isEqualTo(clientResponseDto);
 
         verify(clientRepository).findById(eq(CLIENT_ID));
-        verifyNoInteractions(mapper, userRepository);
+        verify(mapper).mapToDto(client);
+        verifyNoInteractions(vetAppUserRepository);
     }
 
     @Test
@@ -69,7 +73,7 @@ class ClientServiceTest {
                 .hasMessage("Wrong id.");
 
         verify(clientRepository).findById(eq(CLIENT_ID));
-        verifyNoInteractions(mapper, userRepository);
+        verifyNoInteractions(mapper, vetAppUserRepository);
     }
 
     @Test
@@ -80,18 +84,23 @@ class ClientServiceTest {
         Client client = new Client();
         client.setName(CLIENT_NAME);
         client.setSurname(CLIENT_SURNAME);
+        ClientResponseDto clientResponseDto = new ClientResponseDto();
+        clientResponseDto.setName(CLIENT_NAME);
+        clientResponseDto.setSurname(CLIENT_SURNAME);
 
         when(mapper.map(any(ClientRequestDto.class))).thenReturn(client);
         when(clientRepository.save(any(Client.class))).thenReturn(client);
+        when(mapper.mapToDto(any(Client.class))).thenReturn(clientResponseDto);
 
         var result = clientService.createClient(clientDTO);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(client);
+                .isEqualTo(clientResponseDto);
 
         verify(clientRepository).save(eq(client));
         verify(mapper).map(eq(clientDTO));
+        verify(mapper).mapToDto(client);
     }
 
     @Test
@@ -106,7 +115,7 @@ class ClientServiceTest {
         assertThat(thrown)
                 .hasMessage("Name and Surname should not be null.");
 
-        verifyNoInteractions(mapper, userRepository);
+        verifyNoInteractions(mapper, vetAppUserRepository);
     }
 
     @Test
@@ -119,7 +128,7 @@ class ClientServiceTest {
 
         verify(clientRepository).findById(eq(CLIENT_ID));
         verify(clientRepository).delete(eq(client));
-        verifyNoInteractions(mapper, userRepository);
+        verifyNoInteractions(mapper, vetAppUserRepository);
     }
 
     @Test
@@ -133,14 +142,16 @@ class ClientServiceTest {
                 .hasMessage("Wrong id.");
 
         verify(clientRepository).findById(eq(CLIENT_ID));
-        verifyNoInteractions(mapper, userRepository);
+        verifyNoInteractions(mapper, vetAppUserRepository);
     }
 
     @Test
     void getAllClients_ReturnClients_Returned() {
         List<Client> clients = new ArrayList<>();
+        List<ClientResponseDto> clientResponseDtos = new ArrayList<>();
 
         when(clientRepository.findAll()).thenReturn(clients);
+        when(mapper.mapAsList(eq(clients))).thenReturn(clientResponseDtos);
 
         var result = clientService.getAllClients();
 
@@ -148,6 +159,7 @@ class ClientServiceTest {
                 .isNotNull();
 
         verify(clientRepository).findAll();
-        verifyNoInteractions(mapper, userRepository);
+        verifyNoInteractions(vetAppUserRepository);
+        verify(mapper).mapAsList(clients);
     }
 }

@@ -19,7 +19,7 @@ import pl.gr.veterinaryapp.model.dto.LoginUser;
 import pl.gr.veterinaryapp.model.entity.BlockedToken;
 import pl.gr.veterinaryapp.model.entity.VetAppUser;
 import pl.gr.veterinaryapp.repository.BlockedTokenRepository;
-import pl.gr.veterinaryapp.repository.UserRepository;
+import pl.gr.veterinaryapp.repository.VetAppUserRepository;
 import pl.gr.veterinaryapp.service.TokenService;
 
 import java.time.Clock;
@@ -36,7 +36,7 @@ import static pl.gr.veterinaryapp.common.TokenConstants.TOKEN_PREFIX;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
-    private final UserRepository userRepository;
+    private final VetAppUserRepository vetAppUserRepository;
     private final AuthenticationManager authenticationManager;
     private final BlockedTokenRepository blockedTokenRepository;
     private final BCryptPasswordEncoder bcryptEncoder;
@@ -44,7 +44,7 @@ public class TokenServiceImpl implements TokenService {
     private final Clock systemClock;
 
     public AuthToken register(@RequestBody LoginUser loginUser) {
-        var user = userRepository.findByUsername(loginUser.getUsername())
+        var user = vetAppUserRepository.findByUsername(loginUser.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password."));
         if (!bcryptEncoder.matches(loginUser.getPassword(), user.getPassword())) {
             throw new UsernameNotFoundException("Invalid username or password.");

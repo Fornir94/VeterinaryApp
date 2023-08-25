@@ -79,11 +79,9 @@ class PetRestControllerTest {
 
         var petRequest = preparePetRequest(PET_NAME, LocalDate.of(1999, 10, 2), ID, ID);
         var pet = preparePet(PET_NAME, LocalDate.of(1999, 10, 2), animal, client);
-
         var petResponse = preparePetResponse(pet);
 
-        when(petService.createPet(any(User.class), any(PetRequestDto.class))).thenReturn(pet);
-        when(petMapper.map(any(Pet.class))).thenReturn(petResponse);
+        when(petService.createPet(any(User.class), any(PetRequestDto.class))).thenReturn(petResponse);
 
         var result = mockMvc.perform(post("/api/pets")
                 .with(csrf())
@@ -92,7 +90,6 @@ class PetRestControllerTest {
 
         verifyJson(result, petResponse);
 
-        verify(petMapper).map(eq(pet));
         verify(petService).createPet(any(User.class), eq(petRequest));
     }
 
@@ -105,18 +102,15 @@ class PetRestControllerTest {
         client.setId(ID);
 
         var pet = preparePet(PET_NAME, LocalDate.of(1999, 10, 2), animal, client);
-
         var petResponse = preparePetResponse(pet);
 
-        when(petService.getPetById(any(User.class), anyLong())).thenReturn(pet);
-        when(petMapper.map(any(Pet.class))).thenReturn(petResponse);
+        when(petService.getPetById(any(User.class), anyLong())).thenReturn(petResponse);
 
         var result = mockMvc.perform(get("/api/pets/{id}", ID)
                 .contentType(MediaType.APPLICATION_JSON));
 
         verifyJson(result, petResponse);
 
-        verify(petMapper).map(eq(pet));
         verify(petService).getPetById(any(User.class), eq(ID));
     }
 
@@ -124,8 +118,8 @@ class PetRestControllerTest {
     @WithMockUser
     void deletePet_petDeleted_StatusOk() throws Exception {
         mockMvc.perform(delete("/api/pets/{id}", ID)
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
         verify(petService).deletePet(ID);
@@ -139,9 +133,7 @@ class PetRestControllerTest {
         animal.setId(ID);
         Client client = new Client();
         client.setId(ID);
-
         List<PetResponseDto> petResponses = new ArrayList<>();
-        List<Pet> pets = Collections.emptyList();
 
         var petResponse = preparePetResponse(
                 preparePet(PET_NAME, LocalDate.of(1999, 10, 2), animal, client));
@@ -150,11 +142,10 @@ class PetRestControllerTest {
             petResponses.add(petResponse);
         }
 
-        when(petMapper.mapAsList(anyList())).thenReturn(petResponses);
-        when(petService.getAllPets(any(User.class))).thenReturn(pets);
+        when(petService.getAllPets(any(User.class))).thenReturn(petResponses);
 
         var result = mockMvc.perform(get("/api/pets", ID)
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
         for (int i = 0; i < 2; i++) {
@@ -162,7 +153,6 @@ class PetRestControllerTest {
         }
 
         verify(petService).getAllPets(any(User.class));
-        verify(petMapper).mapAsList(eq(pets));
     }
 
     private void verifyJson(ResultActions result, PetResponseDto petResponse) throws Exception {

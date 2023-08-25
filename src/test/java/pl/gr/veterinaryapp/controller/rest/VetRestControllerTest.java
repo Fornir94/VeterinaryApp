@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import pl.gr.veterinaryapp.config.WebSecurityConfig;
 import pl.gr.veterinaryapp.jwt.JwtAuthenticationFilter;
 import pl.gr.veterinaryapp.model.dto.VetRequestDto;
+import pl.gr.veterinaryapp.model.dto.VetResponseDto;
 import pl.gr.veterinaryapp.model.entity.Vet;
 import pl.gr.veterinaryapp.service.VetService;
 
@@ -61,7 +62,7 @@ class VetRestControllerTest {
         OffsetTime workEndTime = OffsetTime.of(LocalTime.MAX, ZoneOffset.MAX);
         var vetRequest = prepareVetRequest(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
 
-        var vet = prepareVet(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
+        var vet = prepareVetResponse(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
 
         when(vetService.createVet(any(VetRequestDto.class))).thenReturn(vet);
 
@@ -84,7 +85,7 @@ class VetRestControllerTest {
         OffsetTime workStartTime = OffsetTime.of(LocalTime.MIN, ZoneOffset.MIN);
         OffsetTime workEndTime = OffsetTime.of(LocalTime.MAX, ZoneOffset.MAX);
 
-        var vet = prepareVet(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
+        var vet = prepareVetResponse(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
 
         when(vetService.getVetById(anyLong())).thenReturn(vet);
 
@@ -106,9 +107,9 @@ class VetRestControllerTest {
         OffsetTime workStartTime = OffsetTime.of(LocalTime.MIN, ZoneOffset.MIN);
         OffsetTime workEndTime = OffsetTime.of(LocalTime.MAX, ZoneOffset.MAX);
 
-        var vet = prepareVet(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
+        var vet = prepareVetResponse(VET_NAME, VET_SURNAME, IMAGE_URL, workStartTime, workEndTime);
 
-        List<Vet> vets = List.of(vet, vet);
+        List<VetResponseDto> vets = List.of(vet, vet);
 
         when(vetService.getAllVets()).thenReturn(vets);
 
@@ -139,6 +140,18 @@ class VetRestControllerTest {
         vet.setWorkEndTime(workEndTime);
         vet.setId(ID);
         return vet;
+    }
+
+    private VetResponseDto prepareVetResponse(String name, String surname, String photoUrl, OffsetTime workStartTime,
+                                              OffsetTime workEndTime) {
+        var vetResponseDto = new VetResponseDto();
+        vetResponseDto.setName(name);
+        vetResponseDto.setSurname(surname);
+        vetResponseDto.setPhotoUrl(photoUrl);
+        vetResponseDto.setWorkStartTime(workStartTime);
+        vetResponseDto.setWorkEndTime(workEndTime);
+        vetResponseDto.setId(ID);
+        return vetResponseDto;
     }
 
     private VetRequestDto prepareVetRequest(String name, String surname, String photoUrl, OffsetTime workStartTime,

@@ -9,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.gr.veterinaryapp.common.VisitStatus;
 import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
+import pl.gr.veterinaryapp.mapper.VisitMapper;
 import pl.gr.veterinaryapp.model.dto.AvailableVisitDto;
 import pl.gr.veterinaryapp.model.dto.VisitEditDto;
 import pl.gr.veterinaryapp.model.dto.VisitRequestDto;
+import pl.gr.veterinaryapp.model.dto.VisitResponseDto;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.model.entity.Pet;
 import pl.gr.veterinaryapp.model.entity.TreatmentRoom;
@@ -45,8 +47,10 @@ public class VisitServiceImpl implements VisitService {
     private final TreatmentRoomRepository treatmentRoomRepository;
     private final Clock systemClock;
 
+    private final VisitMapper visitMapper;
+
     @Override
-    public Visit getVisitById(User user, long id) {
+    public VisitResponseDto getVisitById(User user, long id) {
         Visit visit = visitRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
 
@@ -54,20 +58,20 @@ public class VisitServiceImpl implements VisitService {
             throw new ResourceNotFoundException("Wrong id.");
         }
 
-        return visit;
+        return visitMapper.map(visit);
     }
 
     @Override
-    public List<Visit> getAllVisits(User user) {
-        return visitRepository.findAll()
+    public List<VisitResponseDto> getAllVisits(User user) {
+        return visitMapper.mapAsList(visitRepository.findAll()
                 .stream()
                 .filter(visit -> isUserAuthorized(user, visit.getPet().getClient()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     @Transactional
     @Override
-    public Visit createVisit(User user, VisitRequestDto visitRequestDto) {
+    public VisitResponseDto createVisit(User user, VisitRequestDto visitRequestDto) {
         var vetId = visitRequestDto.getVetId();
         var startDateTime = visitRequestDto.getStartDateTime();
         var duration = visitRequestDto.getDuration();
@@ -92,17 +96,9 @@ public class VisitServiceImpl implements VisitService {
         }
 
         var newVisit = new Visit();
-        newVisit.setPet(pet);
-        newVisit.setVet(vet);
-        newVisit.setStartDateTime(startDateTime);
-        newVisit.setDuration(duration);
-        newVisit.setPrice(visitRequestDto.getPrice());
-        newVisit.setVisitType(visitRequestDto.getVisitType());
-        newVisit.setVisitStatus(VisitStatus.SCHEDULED);
-        newVisit.setOperationType(visitRequestDto.getOperationType());
-        newVisit.setTreatmentRoom(treatmentRoom);
+        newVisit.setNewVisit(visitRequestDto, pet, vet, startDateTime, duration, VisitStatus.SCHEDULED, treatmentRoom);
 
-        return visitRepository.save(newVisit);
+        return visitMapper.map(visitRepository.save(newVisit));
     }
 
     private void validateVisitDate(long vetId, OffsetDateTime startDateTime, Duration duration) {
@@ -139,7 +135,7 @@ public class VisitServiceImpl implements VisitService {
 
     @Transactional
     @Override
-    public Visit finalizeVisit(VisitEditDto visitEditDto) {
+    public VisitResponseDto finalizeVisit(VisitEditDto visitEditDto) {
         Visit visit = visitRepository.findById(visitEditDto.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
         if (visitEditDto.getVisitStatus() == VisitStatus.FINISHED
@@ -148,7 +144,7 @@ public class VisitServiceImpl implements VisitService {
             visit.setVisitStatus(visitEditDto.getVisitStatus());
         }
         visit.setVisitDescription(visitEditDto.getDescription());
-        return visit;
+        return visitMapper.map(visit);
     }
 
     @Transactional

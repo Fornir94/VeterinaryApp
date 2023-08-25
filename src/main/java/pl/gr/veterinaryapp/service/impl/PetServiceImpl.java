@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
+import pl.gr.veterinaryapp.mapper.PetMapper;
 import pl.gr.veterinaryapp.model.dto.PetRequestDto;
+import pl.gr.veterinaryapp.model.dto.PetResponseDto;
 import pl.gr.veterinaryapp.model.entity.Animal;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.model.entity.Pet;
@@ -27,16 +29,17 @@ public class PetServiceImpl implements PetService {
     private final ClientRepository clientRepository;
     private final AnimalRepository animalRepository;
 
+    private final PetMapper mapper;
+
     @Override
-    public List<Pet> getAllPets(User user) {
-        return petRepository.findAll()
-                .stream()
+    public List<PetResponseDto> getAllPets(User user) {
+        return mapper.mapAsList(petRepository.findAll().stream()
                 .filter(pet -> isUserAuthorized(user, pet.getClient()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     @Override
-    public Pet getPetById(User user, long id) {
+    public PetResponseDto getPetById(User user, long id) {
         Pet pet = petRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
 
@@ -44,12 +47,12 @@ public class PetServiceImpl implements PetService {
             throw new ResourceNotFoundException("Wrong id.");
         }
 
-        return pet;
+        return mapper.map(pet);
     }
 
     @Transactional
     @Override
-    public Pet createPet(User user, PetRequestDto petRequestDto) {
+    public PetResponseDto createPet(User user, PetRequestDto petRequestDto) {
         if (petRequestDto.getName() == null) {
             throw new IncorrectDataException("Name cannot be null.");
         }
@@ -68,12 +71,9 @@ public class PetServiceImpl implements PetService {
         }
 
         var newPet = new Pet();
-        newPet.setName(petRequestDto.getName());
-        newPet.setBirthDate(petRequestDto.getBirthDate());
-        newPet.setAnimal(animal);
-        newPet.setClient(client);
+        newPet.setNewPet(petRequestDto.getName(), petRequestDto.getBirthDate(), animal, client);
 
-        return petRepository.save(newPet);
+        return mapper.map(petRepository.save(newPet));
     }
 
     @Transactional

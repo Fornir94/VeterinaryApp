@@ -7,7 +7,7 @@ import pl.gr.veterinaryapp.model.entity.VetAppUser;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<VetAppUser, Long> {
+public interface VetAppUserRepository extends JpaRepository<VetAppUser, Long> {
 
     Optional<VetAppUser> findByUsername(String username);
 }
