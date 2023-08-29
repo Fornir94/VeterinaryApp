@@ -67,9 +67,9 @@ class VetRestControllerTest {
         when(vetService.createVet(any(VetRequestDto.class))).thenReturn(vet);
 
         mockMvc.perform(post("/api/vets")
-                .with(csrf())
-                .content(objectMapper.writeValueAsString(vetRequest))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .with(csrf())
+                        .content(objectMapper.writeValueAsString(vetRequest))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(VET_NAME))
                 .andExpect(jsonPath("$.workStartTime").value(workStartTime.toString()))
@@ -90,7 +90,7 @@ class VetRestControllerTest {
         when(vetService.getVetById(anyLong())).thenReturn(vet);
 
         mockMvc.perform(get("/api/vets/{id}", ID)
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(VET_NAME))
                 .andExpect(jsonPath("$.surname").value(VET_SURNAME))
@@ -114,7 +114,7 @@ class VetRestControllerTest {
         when(vetService.getAllVets()).thenReturn(vets);
 
         mockMvc.perform(get("/api/vets")
-                .accept(MediaType.APPLICATION_JSON))
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.[0].name").value(VET_NAME))
                 .andExpect(jsonPath("$.[0].surname").value(VET_SURNAME))

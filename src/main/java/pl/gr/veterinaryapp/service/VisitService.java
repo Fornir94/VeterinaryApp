@@ -5,7 +5,6 @@ import pl.gr.veterinaryapp.model.dto.AvailableVisitDto;
 import pl.gr.veterinaryapp.model.dto.VisitEditDto;
 import pl.gr.veterinaryapp.model.dto.VisitRequestDto;
 import pl.gr.veterinaryapp.model.dto.VisitResponseDto;
-import pl.gr.veterinaryapp.model.entity.Visit;
 
 import java.time.OffsetDateTime;
 import java.util.Collection;
