@@ -21,7 +21,7 @@ public interface ClientMapper {
             @Mapping(source = "surname", target = "surname"),
             @Mapping(source = "user.username", target = "username")
     })
-    ClientResponseDto map(Client client);
+    ClientResponseDto mapToDto(Client client);
 
     List<ClientResponseDto> mapAsList(Collection<Client> clients);
 }

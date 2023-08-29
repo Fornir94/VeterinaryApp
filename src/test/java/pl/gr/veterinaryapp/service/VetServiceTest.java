@@ -9,6 +9,7 @@ import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
 import pl.gr.veterinaryapp.mapper.VetMapper;
 import pl.gr.veterinaryapp.model.dto.VetRequestDto;
+import pl.gr.veterinaryapp.model.dto.VetResponseDto;
 import pl.gr.veterinaryapp.model.entity.Vet;
 import pl.gr.veterinaryapp.repository.VetRepository;
 import pl.gr.veterinaryapp.service.impl.VetServiceImpl;
@@ -40,17 +41,19 @@ public class VetServiceTest {
     @Test
     void getVetById_WithCorrectId_Returned() {
         Vet vet = new Vet();
+        VetResponseDto vetResponseDto = new VetResponseDto();
 
         when(vetRepository.findById(anyLong())).thenReturn(Optional.of(vet));
+        when(mapper.mapToDto(eq(vet))).thenReturn(vetResponseDto);
 
         var result = vetService.getVetById(VET_ID);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(vet);
+                .isEqualTo(vetResponseDto);
 
         verify(vetRepository).findById(eq(VET_ID));
-        verifyNoInteractions(mapper);
+        verify(mapper).mapToDto(eq(vet));
     }
 
     @Test
@@ -70,43 +73,51 @@ public class VetServiceTest {
     @Test
     void getAllVets_ReturnVets_Returned() {
         List<Vet> vets = new ArrayList<>();
+        Vet vet = new Vet();
+        vets.add(vet);
+        VetResponseDto vetResponseDto = new VetResponseDto();
 
         when(vetRepository.findAll()).thenReturn(vets);
+        when(mapper.mapToDto(eq(vet))).thenReturn(vetResponseDto);
 
         var result = vetService.getAllVets();
 
         assertThat(result)
-                .isNotNull()
-                .isEqualTo(vets);
+                .isNotNull();
 
         verify(vetRepository).findAll();
-        verifyNoInteractions(mapper);
+        verify(mapper).mapToDto(eq(vet));
     }
 
     @Test
-    void saveVet_CorrectData_saved() {
+    void createVet_CorrectData_VetCreated() {
         VetRequestDto request = new VetRequestDto();
         request.setName("test");
         request.setSurname("test");
         Vet vet = new Vet();
         vet.setName("test");
         vet.setSurname("test");
+        VetResponseDto vetResponseDto = new VetResponseDto();
+        vetResponseDto.setName("test");
+        vetResponseDto.setSurname("test");
 
         when(mapper.map(any(VetRequestDto.class))).thenReturn(vet);
         when(vetRepository.save(any(Vet.class))).thenReturn(vet);
+        when(mapper.mapToDto(any(Vet.class))).thenReturn(vetResponseDto);
 
         var result = vetService.createVet(request);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(vet);
+                .isEqualTo(vetResponseDto);
 
         verify(vetRepository).save(eq(vet));
         verify(mapper).map(request);
+        verify(mapper).mapToDto(vet);
     }
 
     @Test
-    void saveVet_NameNull_ExceptionThrown() {
+    void createVet_NameNull_ExceptionThrown() {
         VetRequestDto request = new VetRequestDto();
         request.setSurname("test");
 
@@ -120,7 +131,7 @@ public class VetServiceTest {
     }
 
     @Test
-    void saveVet_SurnameNull_ExceptionThrown() {
+    void createVet_SurnameNull_ExceptionThrown() {
         VetRequestDto request = new VetRequestDto();
         request.setName("test");
 

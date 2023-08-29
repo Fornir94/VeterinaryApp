@@ -3,7 +3,7 @@ package pl.gr.veterinaryapp.model.dto;
 import lombok.Data;
 
 @Data
-public class UserDto {
+public class VetAppUserRequestDto {
 
     private String username;
     private String password;

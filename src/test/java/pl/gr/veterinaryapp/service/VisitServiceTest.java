@@ -16,9 +16,11 @@ import pl.gr.veterinaryapp.common.VisitStatus;
 import pl.gr.veterinaryapp.common.VisitType;
 import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
+import pl.gr.veterinaryapp.mapper.VisitMapper;
 import pl.gr.veterinaryapp.model.dto.AvailableVisitDto;
 import pl.gr.veterinaryapp.model.dto.VisitEditDto;
 import pl.gr.veterinaryapp.model.dto.VisitRequestDto;
+import pl.gr.veterinaryapp.model.dto.VisitResponseDto;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.model.entity.Pet;
 import pl.gr.veterinaryapp.model.entity.TreatmentRoom;
@@ -79,6 +81,8 @@ class VisitServiceTest {
     private TreatmentRoomRepository treatmentRoomRepository;
     @Mock
     private Clock clock;
+    @Mock
+    private VisitMapper mapper;
     @InjectMocks
     private VisitServiceImpl visitService;
 
@@ -120,19 +124,24 @@ class VisitServiceTest {
     void getVisitById_WithCorrectId_Returned() {
         Pet pet = new Pet();
         pet.setClient(new Client());
+        pet.setId(1L);
         Visit visit = new Visit();
         visit.setPet(pet);
+        VisitResponseDto visitResponseDto = new VisitResponseDto();
+        visitResponseDto.setPetId(1L);
 
         when(visitRepository.findById(anyLong())).thenReturn(Optional.of(visit));
+        when(mapper.map(eq(visit))).thenReturn(visitResponseDto);
 
         var result = visitService.getVisitById(USER, VISIT_ID);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(visit);
+                .isEqualTo(visitResponseDto);
 
         verify(visitRepository).findById(eq(VISIT_ID));
         verifyNoInteractions(petRepository, vetRepository, treatmentRoomRepository);
+        verify(mapper).map(visit);
     }
 
     @Test
@@ -152,17 +161,20 @@ class VisitServiceTest {
     @Test
     void getAllVisits_ReturnVisitsList_Returned() {
         List<Visit> visits = emptyList();
+        List<VisitResponseDto> visitResponseDtos = emptyList();
 
         when(visitRepository.findAll()).thenReturn(visits);
+        when(mapper.mapAsList(eq(visits))).thenReturn(visitResponseDtos);
 
         var result = visitService.getAllVisits(USER);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(visits);
+                .isEqualTo(visitResponseDtos);
 
         verify(visitRepository).findAll();
         verifyNoInteractions(petRepository, vetRepository, treatmentRoomRepository);
+        verify(mapper).mapAsList(visits);
     }
 
     @ParameterizedTest
@@ -172,12 +184,19 @@ class VisitServiceTest {
         Duration duration = Duration.ofMinutes(30);
 
         VisitRequestDto request = prepareVisitRequestDto(startDateTime, duration);
+        VisitResponseDto visitResponseDto = prepareVisitResponseDto(startDateTime, duration);
+        visitResponseDto.setId(VISIT_ID);
 
         var pet = new Pet();
+        pet.setId(1L);
         var vet = new Vet();
+        vet.setId(1L);
         vet.setWorkStartTime(OffsetTime.of(LocalTime.MIN, ZoneOffset.UTC));
         vet.setWorkEndTime(OffsetTime.of(LocalTime.MAX, ZoneOffset.UTC));
         var treatmentRoom = new TreatmentRoom();
+        treatmentRoom.setId(1L);
+        Visit visit = new Visit();
+        visit.setNewVisit(request, pet, vet, startDateTime, duration, VisitStatus.SCHEDULED, treatmentRoom);
 
         when(vetRepository.findById(anyLong())).thenReturn(Optional.of(vet));
         when(clock.instant()).thenReturn(fixedClock.instant());
@@ -188,27 +207,23 @@ class VisitServiceTest {
         when(visitRepository.findAllOverlappingInDateRange(any(OffsetDateTime.class), any(OffsetDateTime.class)))
                 .thenReturn(emptyList());
         when(treatmentRoomRepository.findAll()).thenReturn(singletonList(treatmentRoom));
-        when(visitRepository.save(any(Visit.class)))
-                .thenAnswer(invocation -> {
-                    Visit visit = invocation.getArgument(0);
-                    visit.setId(VISIT_ID);
-                    return visit;
-                });
+        when(visitRepository.save(any(Visit.class))).thenReturn(visit);
+        when(mapper.map(eq(visit))).thenReturn(visitResponseDto);
 
         var result = visitService.createVisit(USER, request);
 
         assertThat(result)
                 .isNotNull()
-                .matches(visit -> Objects.equals(visit.getId(), VISIT_ID))
-                .matches(visit -> Objects.equals(visit.getPet(), pet))
-                .matches(visit -> Objects.equals(visit.getVet(), vet))
-                .matches(visit -> Objects.equals(visit.getTreatmentRoom(), treatmentRoom))
-                .matches(visit -> Objects.equals(visit.getStartDateTime(), startDateTime))
-                .matches(visit -> Objects.equals(visit.getDuration(), duration))
-                .matches(visit -> Objects.equals(visit.getPrice(), request.getPrice()))
-                .matches(visit -> Objects.equals(visit.getOperationType(), request.getOperationType()))
-                .matches(visit -> Objects.equals(visit.getVisitType(), request.getVisitType()))
-                .matches(visit -> Objects.equals(visit.getVisitStatus(), VisitStatus.SCHEDULED));
+                .matches(responseDto -> Objects.equals(responseDto.getId(), VISIT_ID))
+                .matches(responseDto -> Objects.equals(responseDto.getPetId(), pet.getId()))
+                .matches(responseDto -> Objects.equals(responseDto.getVetId(), vet.getId()))
+                .matches(responseDto -> Objects.equals(responseDto.getTreatmentRoomId(), treatmentRoom.getId()))
+                .matches(responseDto -> Objects.equals(responseDto.getStartDateTime(), startDateTime))
+                .matches(responseDto -> Objects.equals(responseDto.getDuration(), duration))
+                .matches(responseDto -> Objects.equals(responseDto.getPrice(), request.getPrice()))
+                .matches(responseDto -> Objects.equals(responseDto.getOperationType(), request.getOperationType()))
+                .matches(responseDto -> Objects.equals(responseDto.getVisitType(), request.getVisitType()))
+                .matches(responseDto -> Objects.equals(responseDto.getVisitStatus(), VisitStatus.SCHEDULED));
 
         verify(vetRepository).findById(eq(VET_ID));
         verify(petRepository).findById(eq(PET_ID));
@@ -216,8 +231,9 @@ class VisitServiceTest {
                 eq(request.getStartDateTime().plus(request.getDuration())));
         verify(visitRepository).findAllOverlappingInDateRange(eq(request.getStartDateTime()),
                 eq(request.getStartDateTime().plus(request.getDuration())));
-        verify(visitRepository).save(any(Visit.class));
+        verify(visitRepository).save(visit);
         verify(treatmentRoomRepository).findAll();
+        verify(mapper).map(visit);
     }
 
     @ParameterizedTest
@@ -371,6 +387,22 @@ class VisitServiceTest {
         return request;
     }
 
+    private VisitResponseDto prepareVisitResponseDto
+            (OffsetDateTime startDateTime, Duration duration) {
+        VisitResponseDto responseDTO = new VisitResponseDto();
+        responseDTO.setPetId(PET_ID);
+        responseDTO.setStartDateTime(startDateTime);
+        responseDTO.setDuration(duration);
+        responseDTO.setOperationType(OperationType.OPERATION);
+        responseDTO.setVisitType(VisitType.REMOTE);
+        responseDTO.setPrice(BigDecimal.ONE);
+        responseDTO.setVetId(VET_ID);
+        responseDTO.setTreatmentRoomId(1L);
+        responseDTO.setVisitStatus(VisitStatus.SCHEDULED);
+        return responseDTO;
+    }
+
+
     @Test
     void checkExpiredVisits_WithCorrectData_StatusUpdated() {
         var visit = new Visit();
@@ -410,8 +442,13 @@ class VisitServiceTest {
         visitEditDto.setId(VISIT_ID);
         visitEditDto.setVisitStatus(changedStatus);
         visitEditDto.setDescription(VISIT_DESCRIPTION);
+        VisitResponseDto visitResponseDto = new VisitResponseDto();
+        visitResponseDto.setVisitStatus(expectedStatus);
+        visitResponseDto.setVisitDescription(VISIT_DESCRIPTION);
 
         when(visitRepository.findById(anyLong())).thenReturn(Optional.of(visit));
+        when(mapper.map(eq(visit))).thenReturn(visitResponseDto);
+
 
         var result = visitService.finalizeVisit(visitEditDto);
 
@@ -535,8 +572,8 @@ class VisitServiceTest {
         var treatmentRoom = new TreatmentRoom();
         var pet = new Pet();
         var vet = new Vet();
-        vet.setWorkStartTime(OffsetTime.of(13,0,0,0,ZoneOffset.UTC));
-        vet.setWorkEndTime(OffsetTime.of(14,0,0,0,ZoneOffset.UTC));
+        vet.setWorkStartTime(OffsetTime.of(13, 0, 0, 0, ZoneOffset.UTC));
+        vet.setWorkEndTime(OffsetTime.of(14, 0, 0, 0, ZoneOffset.UTC));
 
 
         when(vetRepository.findById(anyLong())).thenReturn(Optional.of(vet));

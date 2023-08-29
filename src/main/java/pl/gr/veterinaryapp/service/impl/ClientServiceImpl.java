@@ -7,10 +7,11 @@ import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
 import pl.gr.veterinaryapp.mapper.ClientMapper;
 import pl.gr.veterinaryapp.model.dto.ClientRequestDto;
+import pl.gr.veterinaryapp.model.dto.ClientResponseDto;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.model.entity.VetAppUser;
 import pl.gr.veterinaryapp.repository.ClientRepository;
-import pl.gr.veterinaryapp.repository.UserRepository;
+import pl.gr.veterinaryapp.repository.VetAppUserRepository;
 import pl.gr.veterinaryapp.service.ClientService;
 
 import java.util.List;
@@ -21,33 +22,34 @@ public class ClientServiceImpl implements ClientService {
 
     private final ClientRepository clientRepository;
     private final ClientMapper mapper;
-    private final UserRepository userRepository;
+    private final VetAppUserRepository vetAppUserRepository;
 
     @Override
-    public Client getClientById(long id) {
-        return clientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
+    public ClientResponseDto getClientById(long id) {
+        return clientRepository.findById(id).stream()
+                .map(mapper::mapToDto)
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Wrong id."));
     }
 
     @Override
-    public List<Client> getAllClients() {
-        return clientRepository.findAll();
+    public List<ClientResponseDto> getAllClients() {
+        return mapper.mapAsList(clientRepository.findAll());
     }
 
     @Transactional
     @Override
-    public Client createClient(ClientRequestDto clientRequestDTO) {
+    public ClientResponseDto createClient(ClientRequestDto clientRequestDTO) {
         if (clientRequestDTO.getSurname() == null || clientRequestDTO.getName() == null) {
             throw new IncorrectDataException("Name and Surname should not be null.");
         }
 
-        VetAppUser user = userRepository.findByUsername(clientRequestDTO.getUsername())
+        VetAppUser user = vetAppUserRepository.findByUsername(clientRequestDTO.getUsername())
                 .orElse(null);
 
         Client client = mapper.map(clientRequestDTO);
         client.setUser(user);
 
-        return clientRepository.save(client);
+        return mapper.mapToDto(clientRepository.save(client));
     }
 
     @Transactional

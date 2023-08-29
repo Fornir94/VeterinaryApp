@@ -8,6 +8,7 @@ import org.hibernate.annotations.TypeDef;
 import pl.gr.veterinaryapp.common.OperationType;
 import pl.gr.veterinaryapp.common.VisitStatus;
 import pl.gr.veterinaryapp.common.VisitType;
+import pl.gr.veterinaryapp.model.dto.VisitRequestDto;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -68,5 +69,17 @@ public class Visit {
             endDateTime = startDateTime.plus(duration);
         }
         return endDateTime;
+    }
+
+    public void setNewVisit(VisitRequestDto visitRequestDto, Pet pet, Vet vet, OffsetDateTime startDateTime, Duration duration, VisitStatus visitStatus, TreatmentRoom treatmentRoom){
+        this.price=visitRequestDto.getPrice();
+        this.visitType=visitRequestDto.getVisitType();
+        this.operationType=visitRequestDto.getOperationType();
+        this.pet=pet;
+        this.vet=vet;
+        this.startDateTime=startDateTime;
+        this.duration=duration;
+        this.visitStatus=visitStatus;
+        this.treatmentRoom=treatmentRoom;
     }
 }

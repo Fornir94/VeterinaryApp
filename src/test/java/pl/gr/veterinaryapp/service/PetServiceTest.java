@@ -8,7 +8,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.User;
 import pl.gr.veterinaryapp.exception.IncorrectDataException;
 import pl.gr.veterinaryapp.exception.ResourceNotFoundException;
+import pl.gr.veterinaryapp.mapper.PetMapper;
 import pl.gr.veterinaryapp.model.dto.PetRequestDto;
+import pl.gr.veterinaryapp.model.dto.PetResponseDto;
 import pl.gr.veterinaryapp.model.entity.Animal;
 import pl.gr.veterinaryapp.model.entity.Client;
 import pl.gr.veterinaryapp.model.entity.Pet;
@@ -48,6 +50,8 @@ class PetServiceTest {
     private ClientRepository clientRepository;
     @Mock
     private AnimalRepository animalRepository;
+    @Mock
+    private PetMapper petMapper;
     @InjectMocks
     private PetServiceImpl petService;
 
@@ -81,14 +85,15 @@ class PetServiceTest {
     @Test
     void getPetById_WithCorrectId_Returned() {
         Pet pet = new Pet();
+        PetResponseDto petResponseDto = new PetResponseDto();
 
         when(petRepository.findById(anyLong())).thenReturn(Optional.of(pet));
-
+        when(petMapper.map(eq(pet))).thenReturn(petResponseDto);
         var result = petService.getPetById(USER, PET_ID);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(pet);
+                .isEqualTo(petResponseDto);
 
         verify(petRepository).findById(eq(PET_ID));
         verifyNoInteractions(clientRepository, animalRepository);
@@ -110,15 +115,17 @@ class PetServiceTest {
 
     @Test
     void getAllPets_ReturnPetsList_Returned() {
+        List<PetResponseDto> petResponseDtos = emptyList();
         List<Pet> pets = emptyList();
 
         when(petRepository.findAll()).thenReturn(pets);
+        when(petMapper.mapAsList(eq(pets))).thenReturn(petResponseDtos);
 
         var result = petService.getAllPets(USER);
 
         assertThat(result)
                 .isNotNull()
-                .isEqualTo(pets);
+                .isEqualTo(petResponseDtos);
 
         verify(petRepository).findAll();
         verifyNoInteractions(clientRepository, animalRepository);
@@ -129,27 +136,27 @@ class PetServiceTest {
         LocalDate birthDate = LocalDate.now();
 
         PetRequestDto request = preparePetRequestDto(PET_NAME, ANIMAL_ID, CLIENT_ID, birthDate);
+        PetResponseDto petResponseDto = preparePetResponseDto(PET_NAME, ANIMAL_ID, CLIENT_ID, birthDate);
 
         var animal = new Animal();
+        animal.setId(1L);
         var client = new Client();
+        client.setId(1L);
+        Pet pet = new Pet();
+        pet.setNewPet(PET_NAME,birthDate, animal, client);
 
         when(clientRepository.findById(anyLong())).thenReturn(Optional.of(client));
         when(animalRepository.findById(anyLong())).thenReturn(Optional.of(animal));
-        when(petRepository.save(any(Pet.class)))
-                .thenAnswer(invocation -> {
-                    Pet pet = invocation.getArgument(0);
-                    pet.setId(PET_ID);
-                    return pet;
-                });
+        when(petRepository.save(any(Pet.class))).thenReturn(pet);
+        when(petMapper.map(any(Pet.class))).thenReturn(petResponseDto);
 
         var result = petService.createPet(USER, request);
 
         assertThat(result)
                 .isNotNull()
-                .matches(pet -> Objects.equals(pet.getId(), PET_ID))
-                .matches(pet -> Objects.equals(pet.getAnimal(), animal))
-                .matches(pet -> Objects.equals(pet.getClient(), client))
-                .matches(pet -> Objects.equals(pet.getBirthDate(), birthDate));
+                .matches(petResponseDto1 -> Objects.equals(petResponseDto1.getAnimalId(), animal.getId()))
+                .matches(petResponseDto1 -> Objects.equals(petResponseDto1.getClientId(), client.getId()))
+                .matches(petResponseDto1 -> Objects.equals(petResponseDto1.getBirthDate(), birthDate));
 
         verify(clientRepository).findById(eq(CLIENT_ID));
         verify(animalRepository).findById(eq(ANIMAL_ID));
@@ -229,5 +236,14 @@ class PetServiceTest {
         request.setClientId(clientId);
         request.setBirthDate(birthDate);
         return request;
+    }
+
+    private PetResponseDto preparePetResponseDto(String petName, long animalId, long clientId, LocalDate birthDate) {
+        PetResponseDto petResponseDto = new PetResponseDto();
+        petResponseDto.setName(petName);
+        petResponseDto.setAnimalId(animalId);
+        petResponseDto.setClientId(clientId);
+        petResponseDto.setBirthDate(birthDate);
+        return petResponseDto;
     }
 }

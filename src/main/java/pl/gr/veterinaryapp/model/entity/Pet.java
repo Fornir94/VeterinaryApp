@@ -30,4 +30,11 @@ public class Pet {
     @ManyToOne
     @JoinColumn(name = "client_id", referencedColumnName = "id", nullable = false)
     private Client client;
+
+    public void setNewPet(String name, LocalDate birthDate, Animal animal, Client client) {
+        this.animal = animal;
+        this.birthDate = birthDate;
+        this.name = name;
+        this.client = client;
+    }
 }

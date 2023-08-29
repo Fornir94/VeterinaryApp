@@ -1,6 +1,7 @@
 package pl.gr.veterinaryapp.model.entity;
 
 import lombok.Data;
+import pl.gr.veterinaryapp.model.dto.VetAppUserRequestDto;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -30,4 +31,5 @@ public class VetAppUser {
 
     @NotNull
     private String username;
+
 }

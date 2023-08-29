@@ -8,37 +8,38 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pl.gr.veterinaryapp.mapper.VetAppUserMapper;
-import pl.gr.veterinaryapp.model.dto.UserDto;
-import pl.gr.veterinaryapp.service.UserService;
+import pl.gr.veterinaryapp.model.dto.VetAppUserRequestDto;
+import pl.gr.veterinaryapp.model.dto.VetAppUserResponseDto;
+import pl.gr.veterinaryapp.service.VetAppUserService;
 
 import java.util.List;
 
 @RequiredArgsConstructor
 @RequestMapping("api/users")
 @RestController
-public class UserController {
+public class VetAppUserRestController {
 
-    private final UserService userService;
-    private final VetAppUserMapper mapper;
+    private final VetAppUserService vetAppUserService;
 
     @GetMapping
-    public List<UserDto> getAllUsers() {
-        return mapper.mapAsList(userService.getAllUsers());
+    public List<VetAppUserResponseDto> getAllUsers() {
+
+        return vetAppUserService.getAllUsers();
     }
 
     @PostMapping
-    public UserDto createUser(@RequestBody UserDto user) {
-        return mapper.map(userService.createUser(user));
+    public VetAppUserResponseDto createUser(@RequestBody VetAppUserRequestDto user) {
+        return vetAppUserService.createUser(user);
     }
 
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable long id) {
-        userService.deleteUser(id);
+        vetAppUserService.deleteUser(id);
     }
 
     @GetMapping("/{id}")
-    public UserDto getUser(@PathVariable long id) {
-        return mapper.map(userService.getUser(id));
+    public VetAppUserResponseDto getUser(@PathVariable long id) {
+
+        return vetAppUserService.getUser(id);
     }
 }

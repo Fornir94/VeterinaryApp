@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import pl.gr.veterinaryapp.model.entity.VetAppUser;
-import pl.gr.veterinaryapp.repository.UserRepository;
+import pl.gr.veterinaryapp.repository.VetAppUserRepository;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,11 +17,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final VetAppUserRepository vetAppUserRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        VetAppUser vetAppUser = userRepository.findByUsername(username)
+        VetAppUser vetAppUser = vetAppUserRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password."));
         return new User(vetAppUser.getUsername(), vetAppUser.getPassword(), getAuthority(vetAppUser));
     }
